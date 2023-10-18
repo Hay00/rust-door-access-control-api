@@ -1,0 +1,15 @@
+[package]
+name = "access-control-gateway"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.6.20"
+tokio = { version = "1.22.0", features = ["full"] }
+serde = { version = "1.0.149", features = ["derive"] }
+utoipa = { features = ["axum_extras"], version = "2.4.2" }
+utoipa-swagger-ui = { features = ["axum"], version = "3.0.1" }
+validator = { version = "0.13.0", features = ["derive"] }
+rumqttc = "0.23.0"
+log = "0.4.20"
+env_logger = "0.10.0"
