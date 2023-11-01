@@ -1,12 +1,14 @@
-use crate::mqtt_actions::MQTT_UNLOCK_TOPIC;
+use crate::{mqtt_actions::MQTT_UNLOCK_TOPIC, mysql_actions};
 use axum::{http::StatusCode, Json};
 use rumqttc::AsyncClient;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use validator::Validate;
 
-#[derive(Deserialize, Validate)]
-pub struct Password {
+#[derive(Deserialize, Validate, Debug)]
+pub struct UserAuth {
+    #[validate(length(min = 3))]
+    user: String,
     #[validate(length(min = 8))]
     password: String,
 }
@@ -17,9 +19,11 @@ pub struct Response {
 }
 
 pub async fn unlock_door(
-    Json(body): Json<Password>,
+    Json(body): Json<UserAuth>,
     mqtt_cli: Arc<AsyncClient>,
+    sql_conn: Arc<Mutex<mysql::PooledConn>>,
 ) -> (StatusCode, Json<Response>) {
+    // Validate body
     if body.validate().is_err() {
         return (
             StatusCode::BAD_REQUEST,
@@ -29,19 +33,32 @@ pub async fn unlock_door(
         );
     }
 
-    // TODO: Connect on a database to get password hash
-    // TODO: Add password validation logic
+    // Validate user
+    let is_user_valid = mysql_actions::is_user_valid(sql_conn, body.user, body.password).await;
+    if !is_user_valid {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(Response {
+                message: "Invalid User".to_string(),
+            }),
+        );
+    }
 
-    // TODO: Send mqtt message to a topic to unlock the door
+    // Unlock door using MQTT
     mqtt_cli
-        .publish(MQTT_UNLOCK_TOPIC, rumqttc::QoS::AtLeastOnce, true, "1")
+        .publish(
+            MQTT_UNLOCK_TOPIC,
+            rumqttc::QoS::AtLeastOnce,
+            false,
+            "true".as_bytes(),
+        )
         .await
         .unwrap();
 
     return (
         StatusCode::OK,
         Json(Response {
-            message: "Password is valid".to_string(),
+            message: "Valid user".to_string(),
         }),
     );
 }
