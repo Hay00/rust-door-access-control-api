@@ -1,6 +1,6 @@
 [package]
-name = "access-control-gateway"
-version = "0.1.0"
+name = "access-control-api"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
@@ -11,11 +11,16 @@ validator = { version = "0.13.0", features = ["derive"] }
 rumqttc = "0.23.0"
 log = "0.4.20"
 env_logger = "0.10.0"
-mysql = "24.0.0"
 dotenvy = "0.15.7"
 chrono = "0.4.35"
 chrono-tz = "0.6.2"
 diesel = { version = "2.1.4", features = ["mysql", "chrono", "r2d2"] }
 deadpool-diesel = { version = "0.5.0", features = ["mysql"] }
 
-# TODO: Add otimizer for release
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
