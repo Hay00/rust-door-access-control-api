@@ -3,12 +3,9 @@ use rumqttc::{AsyncClient, EventLoop, LastWill, MqttOptions, QoS};
 use std::{thread, time::Duration};
 use tokio::task;
 
-const ONLINE_STATUS: &'static str = "online";
-const OFFLINE_STATUS: &'static str = "offline";
-const MQTT_STATUS_TOPIC: &'static str = "gca/api-gateway/status";
-pub const MQTT_UNLOCK_TOPIC: &'static str = "gca/api-gateway/unlock";
+use crate::services::mqtt::{publish_online_status, MQTT_STATUS_TOPIC, OFFLINE_STATUS};
 
-pub async fn connection_poll(mut con: EventLoop) {
+async fn connection_poll(mut con: EventLoop) {
     loop {
         let evt = con.poll().await;
         match evt {
@@ -21,17 +18,6 @@ pub async fn connection_poll(mut con: EventLoop) {
         }
         thread::sleep(Duration::from_secs(1));
     }
-}
-
-async fn publish_online_status(cli: &AsyncClient) {
-    cli.publish(
-        MQTT_STATUS_TOPIC,
-        QoS::AtLeastOnce,
-        true,
-        ONLINE_STATUS.as_bytes(),
-    )
-    .await
-    .unwrap();
 }
 
 fn setup_mqtt_options(id: String) -> MqttOptions {

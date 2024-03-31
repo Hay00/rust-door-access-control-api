@@ -1,14 +1,17 @@
 use axum::{routing::get, routing::post, Router};
+use deadpool_diesel::mysql::Pool;
+use std::{env, net::SocketAddr, sync::Arc};
 
-use std::{
-    env,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
-};
+pub mod controller;
+pub mod models;
+pub mod services;
+pub mod utils;
 
-pub mod mqtt_actions;
-pub mod mysql_actions;
-pub mod routes;
+#[derive(Clone)]
+pub struct AppState {
+    db_pool: Pool,
+    mqtt_cli: Arc<rumqttc::AsyncClient>,
+}
 
 #[tokio::main]
 async fn main() {
@@ -19,23 +22,19 @@ async fn main() {
         .init();
 
     // Initialize MQTT client
-    mqtt_actions::init_main_client();
-    let route_cli = Arc::new(mqtt_actions::init_route_client());
+    services::mqtt::init_main_client();
+    let route_cli = Arc::new(services::mqtt::init_route_client());
 
-    // Initialize SQL connection
-    let db_conn = Arc::new(Mutex::new(
-        mysql_actions::init_db_connection().await.unwrap(),
-    ));
-
-    let validate_params = {
-        let shared_mqtt_cli = Arc::clone(&route_cli);
-        let shared_sql_conn = Arc::clone(&db_conn);
-        move |json| routes::unlock_door(json, shared_mqtt_cli, shared_sql_conn)
+    // Initialize AppState, shared state between routes
+    let state = AppState {
+        db_pool: services::sql::establish_connection(),
+        mqtt_cli: Arc::clone(&route_cli),
     };
 
     let app = Router::new()
-        .route("/", get(routes::alive_route))
-        .route("/validate-password", post(validate_params));
+        .route("/", get(controller::alive_route))
+        .route("/validate-password", post(controller::unlock_door))
+        .with_state(state.clone());
 
     let host = env::var("GCA_ACCESS_SERVER_HOST").expect("GCA_ACCESS_SERVER_HOST not set");
     let port = env::var("GCA_ACCESS_SERVER_PORT").expect("GCA_ACCESS_SERVER_PORT not set");
