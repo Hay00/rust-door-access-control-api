@@ -14,12 +14,19 @@ pub async fn publish_online_status(cli: &AsyncClient) {
 }
 
 pub async fn publish_open_door(cli: &AsyncClient) {
-    cli.publish(
-        MQTT_UNLOCK_TOPIC,
-        rumqttc::QoS::AtLeastOnce,
-        false,
-        "true".as_bytes(),
-    )
-    .await
-    .unwrap();
+    // Treat error
+
+    let result = cli
+        .publish(
+            MQTT_UNLOCK_TOPIC,
+            rumqttc::QoS::AtLeastOnce,
+            false,
+            "true".as_bytes(),
+        )
+        .await;
+
+    match result {
+        Ok(_) => log::info!("Door unlocked"),
+        Err(e) => log::error!("Error unlocking door: {:?}", e),
+    }
 }

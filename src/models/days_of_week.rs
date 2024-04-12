@@ -1,9 +1,10 @@
 use diesel::prelude::*;
+use serde::Serialize;
 
 use crate::models::schema::days_of_week;
 use crate::utils::{error_mapper, MappedErrors};
 
-#[derive(Queryable, Selectable, Debug)]
+#[derive(Queryable, Selectable, Debug, Serialize)]
 #[diesel(table_name = crate::models::schema::days_of_week)]
 #[diesel(check_for_backend(diesel::mysql::Mysql))]
 pub struct DayOfWeek {

@@ -27,6 +27,7 @@ pub trait Error {
 
 impl Error for diesel::result::Error {
     fn as_infra_error(&self) -> MappedErrors {
+        log::error!("Error: {:?}", self);
         match self {
             diesel::result::Error::NotFound => MappedErrors::NotFound,
             _ => MappedErrors::InternalServerError,

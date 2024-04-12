@@ -1,13 +1,15 @@
-use axum::{routing::get, routing::post, Router};
+use axum_macros::FromRef;
 use deadpool_diesel::mysql::Pool;
 use std::{env, net::SocketAddr, sync::Arc};
 
-pub mod controller;
+pub mod controllers;
+pub mod middlewares;
 pub mod models;
+pub mod routes;
 pub mod services;
 pub mod utils;
 
-#[derive(Clone)]
+#[derive(Clone, FromRef)]
 pub struct AppState {
     db_pool: Pool,
     mqtt_cli: Arc<rumqttc::AsyncClient>,
@@ -23,18 +25,15 @@ async fn main() {
 
     // Initialize MQTT client
     services::mqtt::init_main_client();
-    let route_cli = Arc::new(services::mqtt::init_route_client());
+    let route_cli = Arc::new(services::mqtt::init_route_client().to_owned());
 
     // Initialize AppState, shared state between routes
     let state = AppState {
         db_pool: services::sql::establish_connection(),
-        mqtt_cli: Arc::clone(&route_cli),
+        mqtt_cli: route_cli,
     };
 
-    let app = Router::new()
-        .route("/", get(controller::alive_route))
-        .route("/validate-password", post(controller::unlock_door))
-        .with_state(state.clone());
+    let app = routes::builder(state);
 
     let host = env::var("GCA_ACCESS_SERVER_HOST").expect("GCA_ACCESS_SERVER_HOST not set");
     let port = env::var("GCA_ACCESS_SERVER_PORT").expect("GCA_ACCESS_SERVER_PORT not set");
@@ -43,8 +42,11 @@ async fn main() {
         .parse::<SocketAddr>()
         .expect("Invalid address or port");
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .expect("Failed to bind to address");
+
+    axum::serve(listener, app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
