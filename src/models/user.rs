@@ -18,6 +18,8 @@ pub struct User {
     #[validate(email)]
     pub email: String,
     pub created_at: NaiveDateTime,
+    pub is_admin: bool,
+    pub is_active: bool,
 }
 
 #[derive(Insertable, Deserialize, Debug, Clone, Validate)]

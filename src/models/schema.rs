@@ -18,6 +18,8 @@ diesel::table! {
         #[max_length = 255]
         email -> Varchar,
         created_at -> Timestamp,
+        is_admin -> Bool,
+        is_active -> Bool,
     }
 }
 
