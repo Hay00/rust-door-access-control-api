@@ -85,7 +85,7 @@ pub async fn delete_user(
     State(app_state): State<AppState>,
     Path(user_id): Path<u32>,
 ) -> Result<StatusCode, ControllerError> {
-    user::delete(&app_state.db_pool, user_id)
+    user::disable(&app_state.db_pool, user_id)
         .await
         .map_err(|err| ControllerError {
             message: err.to_string(),

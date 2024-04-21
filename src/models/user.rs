@@ -50,6 +50,8 @@ pub struct ListUser {
     pub username: String,
     pub email: String,
     pub created_at: NaiveDateTime,
+    pub is_admin: bool,
+    pub is_active: bool,
 }
 
 pub async fn create(
@@ -93,6 +95,8 @@ pub async fn find(
         username: user.username,
         email: user.email,
         created_at: user.created_at,
+        is_admin: user.is_admin,
+        is_active: user.is_active,
     })
 }
 
@@ -134,15 +138,27 @@ pub async fn list(pool: &deadpool_diesel::mysql::Pool) -> Result<Vec<ListUser>, 
             username: user.username,
             email: user.email,
             created_at: user.created_at,
+            is_admin: user.is_admin,
+            is_active: user.is_active,
         })
         .collect();
 
     Ok(user_list)
 }
 
-pub async fn delete(pool: &deadpool_diesel::mysql::Pool, user_id: u32) -> Result<(), MappedErrors> {
-    // First create a field to disable user
-    todo!()
+pub async fn disable(pool: &deadpool_diesel::mysql::Pool, user_id: u32) -> Result<(), MappedErrors> {
+    let conn = pool.get().await.map_err(error_mapper)?;
+
+    conn.interact(move |conn| {
+        diesel::update(users::table.find(user_id as i32))
+            .set(users::is_active.eq(false))
+            .execute(conn)
+    })
+    .await
+    .map_err(error_mapper)?
+    .map_err(error_mapper)?;
+
+    Ok(())
 }
 
 pub async fn find_by_login(
