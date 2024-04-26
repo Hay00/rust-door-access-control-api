@@ -42,5 +42,6 @@ fn open_routes(state: AppState) -> Router {
     Router::new()
         .route("/", get(controllers::service_alive::alive_route))
         .route("/validate-password", post(controllers::door::unlock))
+        .route("/login", post(controllers::auth::login))
         .with_state(state)
 }

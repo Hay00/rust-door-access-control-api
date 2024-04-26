@@ -19,6 +19,7 @@ chrono-tz = "0.6.2"
 diesel = { version = "2.1.4", features = ["mysql", "chrono", "r2d2"] }
 deadpool-diesel = { version = "0.5.0", features = ["mysql"] }
 serde_json = "1.0.115"
+jsonwebtoken = "9.3.0"
 
 [profile.dev]
 opt-level = 0

@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod door;
 pub mod login;
 pub mod service_alive;

@@ -181,3 +181,24 @@ pub async fn find_by_login(
 
     Ok(result.id)
 }
+
+pub async fn find_by_login_user(
+    pool: &deadpool_diesel::mysql::Pool,
+    email: String,
+    password: String,
+) -> Result<User, MappedErrors> {
+    let conn = pool.get().await.map_err(error_mapper)?;
+
+    let result = conn
+        .interact(move |conn| {
+            users::table
+                .filter(users::email.eq(email))
+                .filter(users::password.eq(password))
+                .first::<User>(conn)
+        })
+        .await
+        .map_err(error_mapper)?
+        .map_err(error_mapper)?;
+
+    Ok(result)
+}

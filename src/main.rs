@@ -2,6 +2,7 @@ use axum_macros::FromRef;
 use deadpool_diesel::mysql::Pool;
 use std::{env, net::SocketAddr, sync::Arc};
 
+pub mod auth;
 pub mod controllers;
 pub mod middlewares;
 pub mod models;
